@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyAI — Personalized Learning Planner</title>
+  <meta name="description" content="AI-powered personalized study planner with smart scheduling, Pomodoro timer, progress tracking, and an AI coach." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ONBOARDING OVERLAY
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="onboarding-overlay" class="onboarding-overlay">
+  <div class="onboarding-card">
+    <div class="onboarding-logo">
+      <span class="logo-icon">🎓</span>
+      <h1 class="logo-text">StudyAI</h1>
+    </div>
+    <p class="onboarding-subtitle">Your AI-powered personalized learning companion</p>
+
+    <!-- Step 1 -->
+    <div id="step-1" class="onboarding-step active">
+      <h2>Welcome! Let's set up your profile 👋</h2>
+      <div class="form-group">
+        <label for="ob-name">Your Name</label>
+        <input type="text" id="ob-name" placeholder="e.g. Alex Johnson" />
+      </div>
+      <div class="form-group">
+        <label for="ob-hours">Daily Study Hours Available</label>
+        <input type="number" id="ob-hours" min="0.5" max="16" step="0.5" value="4" />
+      </div>
+      <div class="form-group">
+        <label>Your Learning Style</label>
+        <div class="style-grid" id="learning-style-grid">
+          <button class="style-btn active" data-style="visual">👁️ Visual</button>
+          <button class="style-btn" data-style="auditory">👂 Auditory</button>
+          <button class="style-btn" data-style="reading">📖 Reading</button>
+          <button class="style-btn" data-style="kinesthetic">🤲 Kinesthetic</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="goToStep(2)">Next →</button>
+    </div>
+
+    <!-- Step 2 -->
+    <div id="step-2" class="onboarding-step">
+      <h2>Add your subjects 📚</h2>
+      <p class="step-hint">Add each subject, its difficulty (1-10), and exam date.</p>
+      <div id="subjects-list" class="subjects-list"></div>
+      <button class="btn-secondary" onclick="addSubjectRow()">+ Add Subject</button>
+      <div class="step-nav">
+        <button class="btn-ghost" onclick="goToStep(1)">← Back</button>
+        <button class="btn-primary" onclick="goToStep(3)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div id="step-3" class="onboarding-step">
+      <h2>Almost done! 🚀</h2>
+      <div class="form-group">
+        <label for="ob-goal">Your Primary Goal</label>
+        <select id="ob-goal">
+          <option value="exam">Pass/Ace an Exam</option>
+          <option value="skill">Learn a New Skill</option>
+          <option value="certification">Get Certified</option>
+          <option value="general">General Knowledge</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="ob-pomodoroWork">Pomodoro Work Duration (minutes)</label>
+        <input type="number" id="ob-pomodoroWork" min="10" max="60" step="5" value="25" />
+      </div>
+      <div class="form-group">
+        <label for="ob-pomodoroBreak">Pomodoro Break Duration (minutes)</label>
+        <input type="number" id="ob-pomodoroBreak" min="3" max="20" step="1" value="5" />
+      </div>
+      <div class="step-nav">
+        <button class="btn-ghost" onclick="goToStep(2)">← Back</button>
+        <button class="btn-primary" id="finish-setup-btn" onclick="finishSetup()">🎉 Start Learning!</button>
+      </div>
+    </div>
+
+    <!-- Step dots -->
+    <div class="step-dots">
+      <span class="dot active" id="dot-1"></span>
+      <span class="dot" id="dot-2"></span>
+      <span class="dot" id="dot-3"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="app" class="app hidden">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon-sm">🎓</span>
+      <span class="sidebar-brand">StudyAI</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" data-page="dashboard" onclick="switchPage('dashboard')">
+        <span class="nav-icon">📊</span><span class="nav-label">Dashboard</span>
+      </button>
+      <button class="nav-btn" data-page="plan" onclick="switchPage('plan')">
+        <span class="nav-icon">📅</span><span class="nav-label">Study Plan</span>
+      </button>
+      <button class="nav-btn" data-page="timer" onclick="switchPage('timer')">
+        <span class="nav-icon">⏱️</span><span class="nav-label">Focus Timer</span>
+      </button>
+      <button class="nav-btn" data-page="tasks" onclick="switchPage('tasks')">
+        <span class="nav-icon">✅</span><span class="nav-label">Tasks</span>
+      </button>
+      <button class="nav-btn" data-page="chat" onclick="switchPage('chat')">
+        <span class="nav-icon">🤖</span><span class="nav-label">AI Coach</span>
+      </button>
+    </nav>
+    <div class="sidebar-user" id="sidebar-user">
+      <div class="user-avatar" id="user-avatar">A</div>
+      <div class="user-info">
+        <span class="user-name" id="user-name-sidebar">Student</span>
+        <span class="user-level" id="user-level-sidebar">Level 1</span>
+      </div>
+      <button class="settings-btn" onclick="openSettings()" title="Settings">⚙️</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top bar -->
+    <header class="topbar">
+      <button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="xp-bar-mini">
+          <span class="xp-label" id="topbar-xp">0 XP</span>
+          <div class="xp-track">
+            <div class="xp-fill" id="topbar-xp-fill"></div>
+          </div>
+        </div>
+        <div class="streak-badge" id="topbar-streak">🔥 0</div>
+      </div>
+    </header>
+
+    <!-- ─────────────────────────────── DASHBOARD PAGE ─────────────────────── -->
+    <section id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div>
+          <h1 id="dashboard-greeting">Good morning! 👋</h1>
+          <p class="page-subtitle" id="dashboard-date">Loading...</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-primary" onclick="switchPage('timer')">▶ Start Session</button>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-grid">
+        <div class="stat-card" id="stat-sessions">
+          <div class="stat-icon">📖</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-total-sessions">0</div>
+            <div class="stat-label">Total Sessions</div>
+          </div>
+        </div>
+        <div class="stat-card" id="stat-hours">
+          <div class="stat-icon">⏰</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-total-hours">0h</div>
+            <div class="stat-label">Hours Studied</div>
+          </div>
+        </div>
+        <div class="stat-card" id="stat-streak">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-streak-val">0</div>
+            <div class="stat-label">Day Streak</div>
+          </div>
+        </div>
+        <div class="stat-card" id="stat-tasks">
+          <div class="stat-icon">✅</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-tasks-done">0</div>
+            <div class="stat-label">Tasks Done</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- XP / Level card -->
+      <div class="level-card">
+        <div class="level-info">
+          <div class="level-badge" id="dash-level">Lvl 1</div>
+          <div class="level-details">
+            <span id="dash-xp-text">0 / 500 XP</span>
+            <div class="xp-bar-full">
+              <div class="xp-bar-inner" id="dash-xp-bar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="level-perks">
+          <span class="perk-tag">🏆 Scholar</span>
+          <span class="perk-tag">📚 Consistent</span>
+        </div>
+      </div>
+
+      <!-- Chart + Insights row -->
+      <div class="chart-insights-row">
+        <div class="card chart-card">
+          <h3 class="card-title">📈 Study Activity (Last 7 Days)</h3>
+          <canvas id="activity-chart" width="100%" height="200"></canvas>
+        </div>
+        <div class="card insights-card">
+          <h3 class="card-title">🤖 AI Insights</h3>
+          <div id="insights-list" class="insights-list">
+            <div class="insight-skeleton"></div>
+            <div class="insight-skeleton"></div>
+            <div class="insight-skeleton"></div>
+          </div>
+          <div class="daily-tip" id="daily-tip">
+            <span class="tip-label">💡 Daily Tip</span>
+            <p id="tip-text">Loading...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject Progress -->
+      <div class="card">
+        <h3 class="card-title">📚 Subject Progress</h3>
+        <div id="subject-progress-list" class="subject-progress-list">
+          <p class="empty-state">Set up your profile to see subject progress!</p>
+        </div>
+      </div>
+
+      <!-- Recent Sessions -->
+      <div class="card">
+        <div class="card-header-row">
+          <h3 class="card-title">🕒 Recent Sessions</h3>
+          <button class="btn-ghost-sm" onclick="switchPage('timer')">+ Log Session</button>
+        </div>
+        <div id="recent-sessions" class="sessions-list">
+          <p class="empty-state">No sessions yet. Start studying! 🚀</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────── STUDY PLAN PAGE ────────────────────── -->
+    <section id="page-plan" class="page hidden">
+      <div class="page-header">
+        <div>
+          <h1>Your Study Plan 📅</h1>
+          <p class="page-subtitle">AI-generated schedule based on your subjects & goals</p>
+        </div>
+        <button class="btn-secondary" onclick="regeneratePlan()">🔄 Regenerate</button>
+      </div>
+
+      <div id="plan-container" class="plan-container">
+        <p class="empty-state">Loading your personalized plan...</p>
+      </div>
+
+      <!-- Weekly Calendar -->
+      <div class="card" style="margin-top:1.5rem">
+        <h3 class="card-title">📆 This Week's Focus</h3>
+        <div id="weekly-calendar" class="weekly-calendar"></div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────── TIMER PAGE ─────────────────────────── -->
+    <section id="page-timer" class="page hidden">
+      <div class="page-header">
+        <div>
+          <h1>Focus Timer ⏱️</h1>
+          <p class="page-subtitle">Stay in the zone with Pomodoro technique</p>
+        </div>
+      </div>
+
+      <div class="timer-layout">
+        <!-- Pomodoro Timer -->
+        <div class="card timer-card">
+          <div class="pomodoro-tabs">
+            <button class="pomo-tab active" id="tab-focus" onclick="setMode('focus')">Focus</button>
+            <button class="pomo-tab" id="tab-break" onclick="setMode('break')">Short Break</button>
+            <button class="pomo-tab" id="tab-long" onclick="setMode('long')">Long Break</button>
+          </div>
+          <div class="timer-circle">
+            <svg class="timer-ring" viewBox="0 0 220 220">
+              <circle class="ring-bg" cx="110" cy="110" r="100"/>
+              <circle class="ring-progress" id="ring-progress" cx="110" cy="110" r="100"
+                stroke-dasharray="628" stroke-dashoffset="628"/>
+            </svg>
+            <div class="timer-display">
+              <span id="timer-time">25:00</span>
+              <span id="timer-mode-label">FOCUS</span>
+            </div>
+          </div>
+          <div class="timer-controls">
+            <button class="timer-btn" id="timer-start-btn" onclick="toggleTimer()">▶ Start</button>
+            <button class="timer-btn-ghost" onclick="resetTimer()">↺ Reset</button>
+          </div>
+          <div class="pomo-count">
+            <span class="pomo-label">Pomodoros Today</span>
+            <div class="pomo-dots" id="pomo-dots"></div>
+          </div>
+          <div class="timer-subject-select">
+            <label>Studying:</label>
+            <select id="timer-subject">
+              <option value="General">General</option>
+            </select>
+          </div>
+          <div class="coach-msg" id="coach-msg">
+            <span class="coach-icon">🤖</span>
+            <span id="coach-text">Ready to focus? Let's crush it! 💪</span>
+          </div>
+        </div>
+
+        <!-- Log Session Panel -->
+        <div class="card log-session-card">
+          <h3 class="card-title">📝 Log a Study Session</h3>
+          <p class="card-subtitle">Manually record a past study session</p>
+          <div class="form-group">
+            <label for="log-subject">Subject</label>
+            <select id="log-subject">
+              <option value="General">General</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="log-duration">Duration (minutes)</label>
+            <input type="number" id="log-duration" min="1" max="480" value="25" />
+          </div>
+          <div class="form-group">
+            <label for="log-notes">Notes (optional)</label>
+            <textarea id="log-notes" rows="3" placeholder="What did you cover?"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="log-rating">How was the session?</label>
+            <div class="rating-stars" id="rating-stars">
+              <span class="star" data-val="1">★</span>
+              <span class="star" data-val="2">★</span>
+              <span class="star" data-val="3">★</span>
+              <span class="star" data-val="4">★</span>
+              <span class="star" data-val="5">★</span>
+            </div>
+          </div>
+          <button class="btn-primary full-width" onclick="logSession()">💾 Save Session</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────── TASKS PAGE ─────────────────────────── -->
+    <section id="page-tasks" class="page hidden">
+      <div class="page-header">
+        <div>
+          <h1>Smart Tasks ✅</h1>
+          <p class="page-subtitle">AI-prioritized task management</p>
+        </div>
+      </div>
+
+      <!-- Add Task -->
+      <div class="card add-task-card">
+        <h3 class="card-title">➕ Add New Task</h3>
+        <div class="add-task-form">
+          <input type="text" id="task-title" placeholder="Task title..." class="task-title-input" />
+          <select id="task-subject">
+            <option value="General">General</option>
+          </select>
+          <select id="task-priority">
+            <option value="high">🔴 High</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+          <input type="date" id="task-due" />
+          <button class="btn-primary" onclick="addTask()">Add Task</button>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all" onclick="filterTasks('all')">All</button>
+        <button class="filter-btn" data-filter="pending" onclick="filterTasks('pending')">Pending</button>
+        <button class="filter-btn" data-filter="completed" onclick="filterTasks('completed')">Completed</button>
+        <button class="filter-btn" data-filter="high" onclick="filterTasks('high')">🔴 High Priority</button>
+      </div>
+
+      <!-- Tasks List -->
+      <div id="tasks-list" class="tasks-list">
+        <p class="empty-state">No tasks yet. Add your first task above! ✨</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────── AI CHAT PAGE ───────────────────────── -->
+    <section id="page-chat" class="page hidden">
+      <div class="page-header">
+        <div>
+          <h1>AI Study Coach 🤖</h1>
+          <p class="page-subtitle">Your personalized AI mentor — always here to help</p>
+        </div>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+          <!-- Messages injected by JS -->
+        </div>
+        <div class="chat-quick-prompts" id="quick-prompts">
+          <button class="quick-btn" onclick="sendQuickMsg('Give me a study tip')">💡 Study Tip</button>
+          <button class="quick-btn" onclick="sendQuickMsg('I need motivation')">💪 Motivate Me</button>
+          <button class="quick-btn" onclick="sendQuickMsg('How is my progress?')">📊 My Progress</button>
+          <button class="quick-btn" onclick="sendQuickMsg('What should I study today?')">📅 Today\'s Plan</button>
+          <button class="quick-btn" onclick="sendQuickMsg('How to improve my memory?')">🧠 Memory Tips</button>
+          <button class="quick-btn" onclick="sendQuickMsg('Exam preparation tips')">🎯 Exam Prep</button>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" class="chat-input" placeholder="Ask your AI coach anything..." onkeydown="handleChatKey(event)" />
+          <button class="chat-send-btn" onclick="sendChatMessage()" id="chat-send-btn">
+            <span>➤</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>⚙️ Settings</h2>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="set-name">Name</label>
+        <input type="text" id="set-name" />
+      </div>
+      <div class="form-group">
+        <label for="set-hours">Daily Study Hours</label>
+        <input type="number" id="set-hours" min="0.5" max="16" step="0.5" />
+      </div>
+      <div class="form-group">
+        <label for="set-pomo-work">Pomodoro Work (min)</label>
+        <input type="number" id="set-pomo-work" min="10" max="60" step="5" />
+      </div>
+      <div class="form-group">
+        <label for="set-pomo-break">Pomodoro Break (min)</label>
+        <input type="number" id="set-pomo-break" min="3" max="20" step="1" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeSettings()">Cancel</button>
+        <button class="btn-primary" onclick="saveSettings()">Save Changes</button>
+      </div>
+      <div class="danger-zone">
+        <h4>⚠️ Danger Zone</h4>
+        <button class="btn-danger" onclick="resetProfile()">Reset Profile & Data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast hidden">
+  <span id="toast-msg">Success!</span>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
